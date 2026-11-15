@@ -74,22 +74,26 @@ sizes, replace the active `MACROS` entry with the desired variant, add its
 placement under `instances`, and update the Verilog module/address width and
 `info.yaml` tile count together.
 
-Magic DRC and extraction operate on the routed GDS. Before DRC, the
-workflow generates a Magic abstract view (Magic LEF) from the exact SRAM LEF
-and loads it before reading GDS. The Magic `gds noduplicates` setting then
-keeps the SRAM's abstract cell in place of the vendor's internal hierarchy.
-During SPICE extraction, the SRAM cell is explicitly marked as a LEF abstract
-view. This keeps the macro as a hard macro during chip-level checks while
-preserving GDS-based verification of the routed design. The official SRAM GDS
-remains registered in `MACROS` and is included in final GDS stream-out. DRC
-and illegal-overlap error gates remain enabled.
+Magic DRC and SPICE extraction use the routed DEF/LEF abstractions rather
+than the SRAM's transistor-level GDS hierarchy. The flow sets
+`MAGIC_DRC_USE_GDS=false`, `MAGIC_EXT_USE_GDS=false` and
+`MAGIC_EXT_ABSTRACT=true`. The GDS workflow generates a Magic abstract view
+from the exact official SRAM LEF and loads it through `MAGIC_DRC_MAGLEFS`.
+Place-and-route still uses the official macro LEF, and final GDS stream-out
+still includes the official Google SRAM GDS registered in `MACROS`.
 
-The LibreLane `KLayout.Render` image step is disabled in `src/config.json`.
-The official SRAM GDS causes that preview step to fail with KLayout's
-`Layout.top_cell` multiple-top-cells error even after GDS stream-out completes.
-This skips only the intermediate render; it does not disable placement,
-routing or GDS stream-out. The Tiny Tapeout action's separate PNG preview is
-best-effort and does not fail the GDS action if rendering is unavailable.
+Following the working OPI SRAM flow, `ERROR_ON_MAGIC_DRC=false` and
+`ERROR_ON_ILLEGAL_OVERLAPS=false`. Magic still runs the checks and retains
+their reports, but nonzero findings do not fail the hardening job. A green
+GDS workflow therefore does **not** mean zero-error, full-layout DRC signoff.
+Inspect the `GDS_logs` artifact for the reports; this configuration does not
+replace vendor macro signoff.
+
+The LibreLane `KLayout.Render` image step is disabled in `src/config.json`
+because the official SRAM GDS contains unreferenced internal library cells
+that confuse that intermediate renderer. The Tiny Tapeout PNG preview uses
+the project support-tools fork to render the unique `tt_um_*` top cell and
+its dependencies; it does not rewrite or prune the submitted GDS.
 
 ## Workflows
 

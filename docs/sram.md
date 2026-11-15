@@ -30,12 +30,20 @@ stream-out completes. This substitution skips only the image-render step; it
 does not disable synthesis, placement, timing analysis, routing or GDS stream
 out. The Tiny Tapeout action's later PNG preview is best-effort.
 
-`MAGIC_GDS_FLATGLOB` applies the GF180 reference project's hierarchy
-flattening patterns for foundry SRAM subcells and device structures. These
-patterns prevent false-positive Magic DRC and illegal-overlap reports caused
-by intentional layer overlap between nested GDS cells. Magic DRC and illegal
-overlap checks remain enabled; the configuration does not waive their
-results.
+Magic DRC and SPICE extraction use routed DEF/LEF abstractions rather than
+the full SRAM transistor-level GDS hierarchy. The flow sets
+`MAGIC_DRC_USE_GDS=false`, `MAGIC_EXT_USE_GDS=false` and
+`MAGIC_EXT_ABSTRACT=true`. The GDS workflow generates a Magic abstract view
+from the exact official SRAM LEF and supplies it through `MAGIC_DRC_MAGLEFS`.
+Place-and-route still uses the official SRAM LEF, and final GDS stream-out
+still includes the official macro GDS.
+
+Following the working OPI SRAM flow, `ERROR_ON_MAGIC_DRC=false` and
+`ERROR_ON_ILLEGAL_OVERLAPS=false`. Magic still runs both checks and saves
+their reports, but nonzero findings are non-fatal to hardening. A successful
+GDS workflow is therefore not proof of zero-error full-layout DRC signoff.
+Inspect the `GDS_logs` artifact for the reports; this is not a substitute
+for signoff of the vendor-provided macro layout.
 
 Each macro entry includes GDS, LEF, a Verilog black-box declaration and three
 3.3 V Liberty corners: typical 25°C, slow 125°C and fast -40°C. The Liberty

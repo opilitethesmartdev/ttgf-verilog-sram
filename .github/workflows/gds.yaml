@@ -97,8 +97,24 @@ jobs:
   viewer:
     needs: gds
     runs-on: ubuntu-24.04
-    permissions:
-      pages: write
-      id-token: write
     steps:
-      - uses: TinyTapeout/tt-gds-action/viewer@ttgf26c
+      - name: Download GDS submission
+        uses: actions/download-artifact@v7
+        with:
+          name: tt_submission
+          path: viewer/submission
+
+      - name: Download PNG preview
+        uses: actions/download-artifact@v7
+        with:
+          name: gds_render
+          path: viewer
+
+      - name: Package viewer files
+        run: tar -czf viewer-preview.tar.gz -C viewer .
+
+      - name: Publish downloadable viewer bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: viewer-preview
+          path: viewer-preview.tar.gz
