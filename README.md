@@ -75,7 +75,7 @@ placement under `instances`, and update the Verilog module/address width and
 `info.yaml` tile count together.
 
 Magic DRC and extraction operate on the routed GDS. Before DRC, the
-workflow generates a Magic abstract view (M aglef) from the exact SRAM LEF
+workflow generates a Magic abstract view (Magic LEF) from the exact SRAM LEF
 and loads it before reading GDS. The Magic `gds noduplicates` setting then
 keeps the SRAM's abstract cell in place of the vendor's internal hierarchy.
 During SPICE extraction, the SRAM cell is explicitly marked as a LEF abstract
