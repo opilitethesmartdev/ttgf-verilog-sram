@@ -83,25 +83,33 @@ specification. The script verifies that all references resolve, the macro has
 one top cell, and no layer-58 records remain. The official LEF, Liberty,
 Verilog and simulation model are not modified.
 
+LibreLane produces both Magic and KLayout streamout views. The project sets
+`PRIMARY_GDSII_STREAMOUT_TOOL=klayout` so the submitted GDS comes from
+KLayout's streamout, which retains the unique `tt_um_example` top cell and
+only its referenced macro and standard-cell hierarchy. Magic streamout remains
+available as a separate output for the Magic flow. This avoids placing Magic's
+extra unreferenced SRAM subcells or unsupported layer 58 into the Tiny Tapeout
+submission.
+
 Magic DRC and SPICE extraction use the routed DEF/LEF abstractions rather
 than the SRAM's transistor-level GDS hierarchy. The flow sets
 `MAGIC_DRC_USE_GDS=false`, `MAGIC_EXT_USE_GDS=false` and
 `MAGIC_EXT_ABSTRACT=true`. The GDS workflow generates a Magic abstract view
 from the exact official SRAM LEF and loads it through `MAGIC_DRC_MAGLEFS`.
-Place-and-route still uses the official macro LEF, and final GDS stream-out
-includes the normalized official Google SRAM GDS registered in `MACROS`.
+Place-and-route still uses the official macro LEF, and the KLayout GDS
+streamout includes the normalized official Google SRAM GDS registered in
+`MACROS`.
 
 Following the working OPI SRAM flow, `ERROR_ON_MAGIC_DRC=false` and
 `ERROR_ON_ILLEGAL_OVERLAPS=false`. Magic still runs the checks and retains
 their reports, but nonzero findings do not fail the hardening job. A green
-GDS workflow therefore does **not** mean zero-error, full-layout DRC signoff.
-Inspect the `GDS_logs` artifact for the reports; this configuration does not
-replace vendor macro signoff.
+GDS workflow therefore does **not** mean zero-error, full-layout Magic DRC
+signoff. Inspect the `GDS_logs` artifact for the Magic reports; this
+configuration does not replace vendor macro signoff.
 
-LibreLane's `KLayout.Render` step is enabled again. The prior multiple-top-cell
-issue was caused by the unnormalized SRAM hierarchy; the GDS workflow now
-verifies a single macro root before hardening.
-
+LibreLane's `KLayout.Render` step is enabled. The KLayout primary streamout
+now gives the renderer a single-top-cell layout, while the Tiny Tapeout PNG
+preview is also generated from the `tt_um_*` top cell.
 ## Workflows
 
 GitHub Actions is configured to run Cocotb RTL tests, the GF180 GDS build,
