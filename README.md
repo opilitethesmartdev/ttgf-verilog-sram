@@ -1,42 +1,84 @@
-![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
+# Tiny Tapeout GF180 SRAM Verilog Template
 
-# Tiny Tapeout Verilog Project Template
+[![GDS](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/gds.yaml/badge.svg)](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/gds.yaml)
+[![RTL tests](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/test.yaml/badge.svg)](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/test.yaml)
+[![Docs](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/docs.yaml/badge.svg)](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/docs.yaml)
+[![FPGA](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/fpga.yaml/badge.svg)](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/fpga.yaml)
 
-- [Read the documentation for project](docs/info.md)
+A Tiny Tapeout GF180MCU Verilog starter project that integrates the official
+Google/GlobalFoundries SRAM macros. The default project instantiates a physical
+64x8 SRAM and uses the official vendor model for RTL simulation.
 
-## What is Tiny Tapeout?
+## What is included
 
-Tiny Tapeout is an educational project that aims to make it easier and cheaper than ever to get your digital and analog designs manufactured on a real chip.
+- Official Google GF180MCU SRAM IP as a pinned Git submodule at
+  `src/gf180mcu_fd_ip_sram`.
+- Physical GDS and LEF views for the 64x8, 128x8, 256x8 and 512x8 macros.
+- 3.3 V typical, slow and fast Liberty timing views for each macro.
+- Separate black-box Verilog declarations for ASIC synthesis and the official
+  functional/timing models for simulation.
+- A Cocotb testbench that exercises the example interface and all four SRAM
+  model sizes.
+- A separate inferred-memory implementation for the iCE40 FPGA workflow.
 
-To learn more and get started, visit https://tinytapeout.com.
+## Getting started
 
-## Set up your Verilog project
+Clone the repository with its submodule:
 
-1. Add your Verilog files to the `src` folder.
-2. Edit the [info.yaml](info.yaml) and update information about your project, paying special attention to the `source_files` and `top_module` properties. If you are upgrading an existing Tiny Tapeout project, check out our [online info.yaml migration tool](https://tinytapeout.github.io/tt-yaml-upgrade-tool/).
-3. Edit [docs/info.md](docs/info.md) and add a description of your project.
-4. Adapt the testbench to your design. See [test/README.md](test/README.md) for more information.
+```sh
+git clone --recurse-submodules https://github.com/opilitethesmartdev/ttgf-verilog-sram.git
+cd ttgf-verilog-sram
+```
 
-The GitHub action will automatically build the ASIC files using [LibreLane](https://www.zerotoasiccourse.com/terminology/librelane/).
+For an existing clone, initialize the macro submodule with:
 
-## Enable GitHub actions to build the results page
+```sh
+git submodule update --init --recursive
+```
 
-- [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
+Add project Verilog to `src`, update `info.yaml`, and keep the `source_files`
+list synchronized with the test Makefile. The SRAM physical views and timing
+libraries are registered in `src/config.json`.
 
-## Resources
+## Default pin mapping
 
-- [FAQ](https://tinytapeout.com/faq/)
-- [Digital design lessons](https://tinytapeout.com/digital_design/)
-- [Learn how semiconductors work](https://tinytapeout.com/siliwiz/)
-- [Join the community](https://tinytapeout.com/discord)
-- [Build your design locally](https://www.tinytapeout.com/guides/local-hardening/)
+| Tiny Tapeout pin | Function |
+|---|---|
+| `ui_in[5:0]` | SRAM address |
+| `ui_in[6]` | Write enable, active high |
+| `uio_in[7:0]` | Write data |
+| `uo_out[7:0]` | Read data |
+| `ui_in[7]` | Unused |
 
-## What next?
+The example uses the macro's full-byte write mask (`WEN=8'h00`). Reset does
+not clear SRAM contents: the macro has no reset pin, and the contents after
+power-up must be treated as undefined.
 
-- [Submit your design to the next shuttle](https://app.tinytapeout.com/).
-- Edit [this README](README.md) and explain your design, how it works, and how to test it.
-- Share your project on your social network of choice:
-  - LinkedIn [#tinytapeout](https://www.linkedin.com/search/results/content/?keywords=%23tinytapeout) [@TinyTapeout](https://www.linkedin.com/company/100708654/)
-  - Mastodon [#tinytapeout](https://chaos.social/tags/tinytapeout) [@matthewvenn](https://chaos.social/@matthewvenn)
-  - X (formerly Twitter) [#tinytapeout](https://twitter.com/hashtag/tinytapeout) [@tinytapeout](https://twitter.com/tinytapeout)
-  - Bluesky [@tinytapeout.com](https://bsky.app/profile/tinytapeout.com)
+## SRAM sizes and floorplan
+
+The supplied macros are 8 bits wide. The minimum supported Tiny Tapeout tile
+dimensions that contain each macro are:
+
+| Macro | LEF size (µm) | Minimum tile |
+|---|---:|---|
+| 64x8 | 431.86 x 232.88 | 2x2 |
+| 128x8 | 431.86 x 268.88 | 2x2 |
+| 256x8 | 431.86 x 340.88 | 3x4 |
+| 512x8 | 431.86 x 484.88 | 3x4 |
+
+Only the 64x8 macro is instantiated by default and has a placement in
+`src/config.json`. The other macros are registered as optional physical IP
+and are covered by standalone simulation tests. When changing the instance,
+update the Verilog module name/address width, `MACROS.instances`, and
+`info.yaml` tile count together.
+
+## Workflows
+
+GitHub Actions runs Cocotb RTL tests, the GF180 GDS build, precheck, gate-level
+tests, documentation build and iCE40 FPGA bitstream build. All repository
+workflows are enabled on pushes to `main`. The GDS/GL and FPGA workflows use
+recursive submodule checkout.
+
+See [docs/sram.md](docs/sram.md) for the SRAM interface, timing and integration
+details. The official source is
+[Google's GF180MCU SRAM IP repository](https://github.com/google/globalfoundries-pdk-ip-gf180mcu_fd_ip_sram).
