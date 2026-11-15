@@ -61,5 +61,11 @@
   "PDN_MACRO_CONNECTIONS": [
     "u_sram VPWR VGND VDD VSS"
   ],
-  "PDN_CFG": "dir::pdn_cfg.tcl"
+  "PDN_CFG": "dir::pdn_cfg.tcl",
+  "meta": {
+    "flow": "Classic",
+    "substituting_steps": {
+      "KLayout.Render": null
+    }
+  }
 }

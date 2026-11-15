@@ -21,10 +21,14 @@ The official variants are:
 The current design instantiates only the 64x8 cell. It is explicitly placed at
 (140, 45) µm in the 2x2 tile. The larger cells have physical views, black-box
 declarations and simulation coverage in the repository, but are intentionally
-not listed in the active `MACROS` object until one is instantiated. LibreLane
-merges GDS files for every configured macro, including uninstantiated ones;
-KLayout's render step expects one top-level design cell, so leaving unused
-macro GDS files in `MACROS` can cause the preview render to fail.
+not listed in the active `MACROS` object until one is instantiated.
+
+The configuration sets `meta.substituting_steps.KLayout.Render` to `null`.
+The official SRAM GDS causes LibreLane's intermediate KLayout preview step to
+fail with a multiple-top-cells error, even though the subsequent GDS
+stream-out completes. This substitution skips only the image-render step; it
+does not disable synthesis, placement, timing analysis, routing or GDS stream
+out. The Tiny Tapeout action's later PNG preview is best-effort.
 
 Each macro entry includes GDS, LEF, a Verilog black-box declaration and three
 3.3 V Liberty corners: typical 25°C, slow 125°C and fast -40°C. The Liberty

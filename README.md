@@ -68,13 +68,18 @@ dimensions that contain each macro are:
 
 Only the 64x8 macro is instantiated and registered in `src/config.json` by
 default. Keep only the macro actually instantiated by the RTL in the
-`MACROS` object: LibreLane merges every configured macro GDS into the final
-layout, and unused macro GDS top cells can make KLayout's single-top-cell
-preview fail. The other three official macro views remain available in the
+`MACROS` object. The other three official macro views remain available in the
 submodule and are covered by standalone simulation tests. When switching
 sizes, replace the active `MACROS` entry with the desired variant, add its
 placement under `instances`, and update the Verilog module/address width and
 `info.yaml` tile count together.
+
+The LibreLane `KLayout.Render` image step is disabled in `src/config.json`.
+The official SRAM GDS causes that preview step to fail with KLayout's
+`Layout.top_cell` multiple-top-cells error even after GDS stream-out completes.
+This skips only the intermediate render; it does not disable placement,
+routing or GDS stream-out. The Tiny Tapeout action's separate PNG preview is
+best-effort and does not fail the GDS action if rendering is unavailable.
 
 ## Workflows
 
