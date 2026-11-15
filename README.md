@@ -74,11 +74,14 @@ sizes, replace the active `MACROS` entry with the desired variant, add its
 placement under `instances`, and update the Verilog module/address width and
 `info.yaml` tile count together.
 
-The `MAGIC_GDS_FLATGLOB` list follows the GF180 reference project’s SRAM and
-standard-cell hierarchy handling. The foundry SRAM GDS uses nested cells for
-layer-to-layer contacts and device structures; flattening the corresponding
-subcells avoids false-positive hierarchical-overlap and extraction reports.
-This does not disable Magic DRC or the illegal-overlap checker.
+Magic DRC is configured to check the routed DEF/LEF view rather than
+re-reading the vendor SRAM GDS hierarchy. Magic extraction also abstracts
+LEF-backed cells. This keeps the supplied SRAM macro as a hard macro during
+chip-level checks: its placement, pins and connectivity remain part of the
+design checks, while the vendor-provided internal transistor layout is not
+reinterpreted by Magic. The macro GDS is still registered in `MACROS` and is
+included in final GDS stream-out. DRC and illegal-overlap error gates remain
+enabled for the design-level checks.
 
 The LibreLane `KLayout.Render` image step is disabled in `src/config.json`.
 The official SRAM GDS causes that preview step to fail with KLayout's
