@@ -74,13 +74,22 @@ sizes, replace the active `MACROS` entry with the desired variant, add its
 placement under `instances`, and update the Verilog module/address width and
 `info.yaml` tile count together.
 
+Before hardening, the GDS workflow normalizes the official 64x8 SRAM
+GDS using `.github/scripts/normalize_sram_gds.py`. It preserves the official
+macro root cell and all geometry on supported GF180 layers, assigns unique
+identifiers to internal hierarchy cells to avoid Magic name collisions, and
+removes layer `58/0`, which is not defined by the GF180MCU layer
+specification. The script verifies that all references resolve, the macro has
+one top cell, and no layer-58 records remain. The official LEF, Liberty,
+Verilog and simulation model are not modified.
+
 Magic DRC and SPICE extraction use the routed DEF/LEF abstractions rather
 than the SRAM's transistor-level GDS hierarchy. The flow sets
 `MAGIC_DRC_USE_GDS=false`, `MAGIC_EXT_USE_GDS=false` and
 `MAGIC_EXT_ABSTRACT=true`. The GDS workflow generates a Magic abstract view
 from the exact official SRAM LEF and loads it through `MAGIC_DRC_MAGLEFS`.
 Place-and-route still uses the official macro LEF, and final GDS stream-out
-still includes the official Google SRAM GDS registered in `MACROS`.
+includes the normalized official Google SRAM GDS registered in `MACROS`.
 
 Following the working OPI SRAM flow, `ERROR_ON_MAGIC_DRC=false` and
 `ERROR_ON_ILLEGAL_OVERLAPS=false`. Magic still runs the checks and retains
@@ -89,11 +98,9 @@ GDS workflow therefore does **not** mean zero-error, full-layout DRC signoff.
 Inspect the `GDS_logs` artifact for the reports; this configuration does not
 replace vendor macro signoff.
 
-The LibreLane `KLayout.Render` image step is disabled in `src/config.json`
-because the official SRAM GDS contains unreferenced internal library cells
-that confuse that intermediate renderer. The Tiny Tapeout PNG preview uses
-the project support-tools fork to render the unique `tt_um_*` top cell and
-its dependencies; it does not rewrite or prune the submitted GDS.
+LibreLane's `KLayout.Render` step is enabled again. The prior multiple-top-cell
+issue was caused by the unnormalized SRAM hierarchy; the GDS workflow now
+verifies a single macro root before hardening.
 
 ## Workflows
 
