@@ -68,6 +68,12 @@ jobs:
           echo "Generated $OUT"
           sed -n '1,24p' "$OUT"
 
+      - name: Install GDS editing dependency
+        run: python3 -m pip install gdstk --break-system-packages
+
+      - name: Normalize official SRAM GDS hierarchy
+        run: python3 .github/scripts/normalize_sram_gds.py
+
       - name: Build GDS
         uses: TinyTapeout/tt-gds-action@ttgf26c
         with:
