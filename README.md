@@ -13,8 +13,8 @@ Google/GlobalFoundries SRAM macros. The default project instantiates a physical
 
 - Official Google GF180MCU SRAM IP as a pinned Git submodule at
   `src/gf180mcu_fd_ip_sram`.
-- Physical GDS and LEF views for the 64x8, 128x8, 256x8 and 512x8 macros.
-- 3.3 V typical, slow and fast Liberty timing views for each macro.
+- Official physical GDS, LEF, Verilog and Liberty views for all four 64x8, 128x8, 256x8 and 512x8 macros, supplied by the pinned submodule.
+- A selectable hardening configuration for the currently instantiated macro (64x8 by default), with 3.3 V typical, slow and fast Liberty corners.
 - Separate black-box Verilog declarations for ASIC synthesis and the official
   functional/timing models for simulation.
 - A Cocotb testbench that exercises the example interface and all four SRAM
@@ -66,10 +66,14 @@ dimensions that contain each macro are:
 | 256x8 | 431.86 x 340.88 | 3x4 |
 | 512x8 | 431.86 x 484.88 | 3x4 |
 
-Only the 64x8 macro is instantiated by default and has a placement in
-`src/config.json`. The other macros are registered as optional physical IP
-and are covered by standalone simulation tests. When changing the instance,
-update the Verilog module name/address width, `MACROS.instances`, and
+Only the 64x8 macro is instantiated and registered in `src/config.json` by
+default. Keep only the macro actually instantiated by the RTL in the
+`MACROS` object: LibreLane merges every configured macro GDS into the final
+layout, and unused macro GDS top cells can make KLayout's single-top-cell
+preview fail. The other three official macro views remain available in the
+submodule and are covered by standalone simulation tests. When switching
+sizes, replace the active `MACROS` entry with the desired variant, add its
+placement under `instances`, and update the Verilog module/address width and
 `info.yaml` tile count together.
 
 ## Workflows

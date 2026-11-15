@@ -6,8 +6,10 @@ submodule so the physical and simulation views remain a matched set.
 
 ## Included macros
 
-All four official single-port, 8-bit-wide macro variants are registered in
-`src/config.json`:
+All four official single-port, 8-bit-wide macro variants are present in the
+pinned submodule and have black-box declarations plus simulation coverage.
+Only the active 64x8 macro is registered in `src/config.json` by default.
+The official variants are:
 
 | Cell | Capacity | LEF dimensions (µm) | Minimum tile containing the macro |
 |---|---:|---:|---:|
@@ -17,9 +19,12 @@ All four official single-port, 8-bit-wide macro variants are registered in
 | `gf180mcu_fd_ip_sram__sram512x8m8wm1` | 512 x 8 | 431.86 x 484.88 | 3x4 |
 
 The current design instantiates only the 64x8 cell. It is explicitly placed at
-(140, 45) µm in the 2x2 tile. The larger cells are available in the macro
-configuration and have black-box declarations and simulation coverage, but
-are not placed until instantiated by a design.
+(140, 45) µm in the 2x2 tile. The larger cells have physical views, black-box
+declarations and simulation coverage in the repository, but are intentionally
+not listed in the active `MACROS` object until one is instantiated. LibreLane
+merges GDS files for every configured macro, including uninstantiated ones;
+KLayout's render step expects one top-level design cell, so leaving unused
+macro GDS files in `MACROS` can cause the preview render to fail.
 
 Each macro entry includes GDS, LEF, a Verilog black-box declaration and three
 3.3 V Liberty corners: typical 25°C, slow 125°C and fast -40°C. The Liberty
@@ -68,8 +73,10 @@ To switch the default instance:
 
 1. Replace the cell module in `src/project.v` with the required macro name and
    match its address width (6, 7, 8 or 9 bits).
-2. Update `src/config.json` so the `instances` placement names the actual
-   instance and its coordinates fit the selected tile.
+2. Replace the active `MACROS` entry in `src/config.json` with the entry for
+   the selected cell (including its GDS, LEF, black-box header and Liberty
+   corners). Keep unused macro entries out of `MACROS`. Set `instances` to the
+   actual RTL instance name and place it within the selected tile.
 3. Update `info.yaml` `tiles` to a size that contains the LEF dimensions.
 4. Update the RTL and Cocotb top-level tests for the changed address range.
 
