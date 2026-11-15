@@ -13,6 +13,54 @@ jobs:
         with:
           submodules: recursive
 
+      # Use the same GF180 PDK revision as tt-gds-action so Magic can generate
+      # a LEF-based abstract view for the hard SRAM macro before hardening.
+      - name: Install GF180 PDK
+        uses: TinyTapeout/ciel-action@v1
+        with:
+          pdk_name: gf180mcu
+          pdk_version: 54435919abffb937387ec956209f9cf5fd2dfbee
+          pdk_root: /home/runner/.ciel
+
+      - name: Install Magic
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y magic
+
+      - name: Generate SRAM Magic abstract view
+        env:
+          PDK_ROOT: /home/runner/.ciel
+          PDK_VERSION: 54435919abffb937387ec956209f9cf5fd2dfbee
+        run: |
+          set -euo pipefail
+          CELL=gf180mcu_fd_ip_sram__sram64x8m8wm1
+          PDK_DIR="$PDK_ROOT/ciel/gf180mcu/versions/$PDK_VERSION/gf180mcuD"
+          MAGICRC="$PDK_DIR/libs.tech/magic/gf180mcuD.magicrc"
+          LEF="src/gf180mcu_fd_ip_sram/cells/$CELL/$CELL.lef"
+          OUT="src/macros/maglef/$CELL.mag"
+
+          test -f "$MAGICRC"
+          test -f "$LEF"
+          mkdir -p "$(dirname "$OUT")"
+
+          # Import the vendor LEF into Magic's abstract-view database. This
+          # creates the cell view used by MAGIC_DRC_MAGLEFS; it does not alter
+          # the vendor GDS that is streamed into the final design.
+          export MAGTYPE=maglef
+          magic -dnull -noconsole -rcfile "$MAGICRC" <<EOF
+          drc off
+          lef read $LEF
+          load $CELL
+          save $OUT
+          quit -noprompt
+          EOF
+
+          test -s "$OUT"
+          grep -q '^magic$' "$OUT"
+          grep -q '<< end >>' "$OUT"
+          echo "Generated $OUT"
+          sed -n '1,24p' "$OUT"
+
       - name: Build GDS
         uses: TinyTapeout/tt-gds-action@ttgf26c
         with:
@@ -41,7 +89,7 @@ jobs:
     needs: gds
     runs-on: ubuntu-24.04
     permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
+      pages: write
+      id-token: write
     steps:
       - uses: TinyTapeout/tt-gds-action/viewer@ttgf26c
