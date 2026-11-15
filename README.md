@@ -74,10 +74,12 @@ update the Verilog module name/address width, `MACROS.instances`, and
 
 ## Workflows
 
-GitHub Actions runs Cocotb RTL tests, the GF180 GDS build, precheck, gate-level
-tests, documentation build and iCE40 FPGA bitstream build. All repository
-workflows are enabled on pushes to `main`. The GDS/GL and FPGA workflows use
-recursive submodule checkout.
+GitHub Actions is configured to run Cocotb RTL tests, the GF180 GDS build,
+precheck, gate-level tests, documentation build and iCE40 FPGA bitstream build
+on pushes to `main`. The GDS/GL and FPGA workflows use recursive submodule
+checkout. GitHub does not run workflows in forked repositories until Actions
+is enabled in the fork's **Actions** tab; enable it there before expecting CI
+runs.
 
 See [docs/sram.md](docs/sram.md) for the SRAM interface, timing and integration
 details. The official source is
