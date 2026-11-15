@@ -33,7 +33,6 @@ jobs:
           CFLAGS="-std=gnu99 -Wno-deprecated-non-prototype -Wno-implicit-function-declaration -Wno-parentheses -Wno-macro-redefined" ./configure --prefix=/usr/local --with-tcl --without-x
           make -j2
           sudo make install
-          /usr/local/bin/magic -dnull -noconsole -version
 
       - name: Generate SRAM Magic abstract view
         env:
