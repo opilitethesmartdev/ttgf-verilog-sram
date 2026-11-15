@@ -30,6 +30,13 @@ stream-out completes. This substitution skips only the image-render step; it
 does not disable synthesis, placement, timing analysis, routing or GDS stream
 out. The Tiny Tapeout action's later PNG preview is best-effort.
 
+`MAGIC_GDS_FLATGLOB` applies the GF180 reference project's hierarchy
+flattening patterns for foundry SRAM subcells and device structures. These
+patterns prevent false-positive Magic DRC and illegal-overlap reports caused
+by intentional layer overlap between nested GDS cells. Magic DRC and illegal
+overlap checks remain enabled; the configuration does not waive their
+results.
+
 Each macro entry includes GDS, LEF, a Verilog black-box declaration and three
 3.3 V Liberty corners: typical 25°C, slow 125°C and fast -40°C. The Liberty
 views are included in STA; physical GDS and LEF views are used for stream-out
