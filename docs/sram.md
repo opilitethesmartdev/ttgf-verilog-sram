@@ -50,16 +50,17 @@ simulation, but that initialization is not a silicon reset mechanism.
 
 ## Timing and simulation
 
-The official GF180 model has specify timing checks, including a 55.6 ns
-minimum clock cycle, 25 ns minimum high and low pulse widths, 5 ns input
-setup, and 10 ns input hold requirements. The Cocotb tests use a 100 ns clock
-period and Icarus `-gspecify`, so those timing checks remain active.
+The official GF180 model specifies a 55.6 ns minimum clock cycle, 25 ns
+minimum high and low pulse widths, 5 ns input setup and 10 ns input hold.
+Icarus Verilog cannot elaborate the model's conditional bit-specific output
+path declarations, so the Cocotb functional tests do not enable specify path
+checking. They use a 100 ns clock period, but this does not constitute timing
+signoff and does not test setup/hold violations.
 
 The physical implementation uses the vendor 3.3 V Liberty files and the
-project's 20 ns clock constraint (50 MHz). This is not the same as the
-conservative functional-model timing constants; the Librelane STA reports
-must be used to assess the physical timing path. Do not change the test clock
-or disable specify checks to conceal a model timing violation.
+project's 20 ns clock constraint (50 MHz). LibreLane STA is responsible for
+checking the actual setup/hold and macro timing paths. The functional RTL test
+must not be used as a substitute for that analysis.
 
 ## Adding a different SRAM size
 

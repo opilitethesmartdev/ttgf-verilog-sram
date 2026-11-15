@@ -3,11 +3,14 @@
 The Cocotb testbench drives the actual Tiny Tapeout top-level interface and
 independently exercises the official 64x8, 128x8, 256x8 and 512x8 SRAM models.
 
-The Google/GlobalFoundries Verilog models include specify timing checks. The
-Makefile enables Icarus specify support with `-gspecify`; the tests use a 100 ns
-clock period (50 ns high and low) to satisfy the model's specified 55.6 ns
-minimum cycle and 25 ns minimum pulse widths. Do not disable these checks to
-make a test pass.
+The vendor models contain specify timing paths, but Icarus Verilog 12 cannot
+elaborate their conditional bit-specific output path declarations: it reports
+source/destination width mismatches. Consequently the Icarus test intentionally
+runs the models' functional behavior with specify path checking disabled. The
+test clock is 100 ns (50 ns high and low), above the model's 55.6 ns minimum
+cycle and 25 ns minimum pulse widths. Physical setup/hold and macro timing are
+not waived: the ASIC flow reads the vendor Liberty files and runs STA. Do not
+interpret this functional RTL test as timing signoff.
 
 Run the RTL test:
 

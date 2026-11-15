@@ -53,8 +53,11 @@ async def exercise_macro(dut, prefix, address):
 async def test_sram_template(dut):
     dut._log.info("Starting GF180 SRAM tests")
 
-    # The vendor Verilog model specifies Tcyc=55.6 ns and 25 ns minimum
-    # high/low pulse widths. Keep its specify checks enabled and use 100 ns.
+    # The vendor data sheet/model specifies Tcyc=55.6 ns and 25 ns minimum
+    # high/low pulses. Use 100 ns. Icarus cannot elaborate the model's
+    # conditional bit-specific specify output paths, so this test exercises
+    # functional model behavior; physical timing remains checked by LibreLane
+    # STA using the vendor Liberty timing views.
     clock = Clock(dut.clk, 100, unit="ns")
     dut.rst_n.value = 0
     dut.ena.value = 1
