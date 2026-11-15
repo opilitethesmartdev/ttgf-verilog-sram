@@ -8,48 +8,58 @@ submodule so the physical and simulation views remain a matched set.
 
 All four official single-port, 8-bit-wide macro variants are present in the
 pinned submodule and have black-box declarations plus simulation coverage.
-Only the active 64x8 macro is registered in `src/config.json` by default.
-The official variants are:
+Only the active 64×8 macro is registered in `src/config.json` by default.
 
-| Cell | Capacity | LEF dimensions (µm) | Minimum tile containing the macro |
+| Cell | Capacity | LEF dimensions (µm) | Minimum tile |
 |---|---:|---:|---:|
-| `gf180mcu_fd_ip_sram__sram64x8m8wm1` | 64 x 8 | 431.86 x 232.88 | 2x2 |
-| `gf180mcu_fd_ip_sram__sram128x8m8wm1` | 128 x 8 | 431.86 x 268.88 | 2x2 |
-| `gf180mcu_fd_ip_sram__sram256x8m8wm1` | 256 x 8 | 431.86 x 340.88 | 3x4 |
-| `gf180mcu_fd_ip_sram__sram512x8m8wm1` | 512 x 8 | 431.86 x 484.88 | 3x4 |
+| `gf180mcu_fd_ip_sram__sram64x8m8wm1` | 64×8 | 431.86 × 232.88 | 2×2 |
+| `gf180mcu_fd_ip_sram__sram128x8m8wm1` | 128×8 | 431.86 × 268.88 | 2×2 |
+| `gf180mcu_fd_ip_sram__sram256x8m8wm1` | 256×8 | 431.86 × 340.88 | 3×4 |
+| `gf180mcu_fd_ip_sram__sram512x8m8wm1` | 512×8 | 431.86 × 484.88 | 3×4 |
 
-The current design instantiates only the 64x8 cell. It is explicitly placed at
-(140, 45) µm in the 2x2 tile. The larger cells have physical views, black-box
-declarations and simulation coverage in the repository, but are intentionally
-not listed in the active `MACROS` object until one is instantiated.
+The current design instantiates only the 64×8 cell. It is placed at
+(140, 45) µm in the 2×2 tile. Larger cells are available in the submodule but
+are not registered in the active `MACROS` object until instantiated.
 
-The configuration sets `meta.substituting_steps.KLayout.Render` to `null`.
-The official SRAM GDS causes LibreLane's intermediate KLayout preview step to
-fail with a multiple-top-cells error, even though the subsequent GDS
-stream-out completes. This substitution skips only the image-render step; it
-does not disable synthesis, placement, timing analysis, routing or GDS stream
-out. The Tiny Tapeout action's later PNG preview is best-effort.
+## Physical implementation
 
-Magic DRC and SPICE extraction use routed DEF/LEF abstractions rather than
-the full SRAM transistor-level GDS hierarchy. The flow sets
-`MAGIC_DRC_USE_GDS=false`, `MAGIC_EXT_USE_GDS=false` and
-`MAGIC_EXT_ABSTRACT=true`. The GDS workflow generates a Magic abstract view
-from the exact official SRAM LEF and supplies it through `MAGIC_DRC_MAGLEFS`.
-Place-and-route still uses the official SRAM LEF, and final GDS stream-out
-still includes the official macro GDS.
+Place-and-route uses the official SRAM LEF. Synthesis uses a separate
+black-box Verilog declaration, STA uses the vendor 3.3 V Liberty corners, and
+the final KLayout GDS streamout includes the SRAM GDS registered in
+`src/config.json`.
 
-Following the working OPI SRAM flow, `ERROR_ON_MAGIC_DRC=false` and
-`ERROR_ON_ILLEGAL_OVERLAPS=false`. Magic still runs both checks and saves
-their reports, but nonzero findings are non-fatal to hardening. A successful
-GDS workflow is therefore not proof of zero-error full-layout DRC signoff.
-Inspect the `GDS_logs` artifact for the reports; this is not a substitute
-for signoff of the vendor-provided macro layout.
+The GDS workflow creates a Magic abstract view from the official SRAM LEF and
+loads it through `MAGIC_DRC_MAGLEFS`. Magic DRC and SPICE extraction use
+routed DEF/LEF abstractions rather than the full transistor-level SRAM GDS
+hierarchy. The full SRAM GDS remains part of the final streamout.
 
-Each macro entry includes GDS, LEF, a Verilog black-box declaration and three
-3.3 V Liberty corners: typical 25°C, slow 125°C and fast -40°C. The Liberty
-views are included in STA; physical GDS and LEF views are used for stream-out
-and place-and-route. The official Verilog functional/timing models are used
-only by simulation.
+LibreLane's `KLayout.Render` step is enabled. It generates the 2D PNG preview
+from the routed layout. The Tiny Tapeout viewer job publishes the final OASIS
+file to GitHub Pages for the interactive 3D viewer and Tiny Tapeout Explorer.
+Enable GitHub Pages with **GitHub Actions** as its source in the repository
+settings before the first viewer deployment.
+
+Before hardening, `.github/scripts/normalize_sram_gds.py` gives internal GDS
+cells unique identifiers to avoid Magic name collisions and removes layer
+58/0, which is not defined by the GF180MCU layer specification. The macro
+root cell and geometry on supported GF180 layers are retained; the official
+LEF, Liberty, Verilog and simulation model are not modified.
+
+## DRC and signoff status
+
+The current configuration sets `ERROR_ON_MAGIC_DRC=false` and
+`ERROR_ON_ILLEGAL_OVERLAPS=false`, so findings from those Magic checks do not
+fail the hardening job. `RUN_KLAYOUT_DRC=0` disables KLayout DRC. On the
+latest inspected run, the manufacturability report showed 1,246 Magic DRC
+findings and reported DRC as failed; LVS and antenna checks passed.
+
+A green GDS workflow therefore confirms that the configured flow completed,
+not that the layout is DRC-clean or ready for manufacture. Inspect the
+`GDS_logs` artifact and perform appropriate signoff before using the layout.
+
+Each active macro entry includes GDS, LEF, a Verilog black-box declaration
+and three 3.3 V Liberty corners: typical 25°C, slow 125°C and fast -40°C.
+The official Verilog functional/timing models are used only for simulation.
 
 ## Default example interface
 
@@ -82,9 +92,9 @@ checking. They use a 100 ns clock period, but this does not constitute timing
 signoff and does not test setup/hold violations.
 
 The physical implementation uses the vendor 3.3 V Liberty files and the
-project's 20 ns clock constraint (50 MHz). LibreLane STA is responsible for
-checking the actual setup/hold and macro timing paths. The functional RTL test
-must not be used as a substitute for that analysis.
+project's 20 ns clock constraint (50 MHz). LibreLane STA runs across the
+configured process, voltage and temperature corners. Review the STA reports;
+the functional RTL test is not a substitute for timing analysis.
 
 ## Adding a different SRAM size
 
@@ -92,21 +102,21 @@ To switch the default instance:
 
 1. Replace the cell module in `src/project.v` with the required macro name and
    match its address width (6, 7, 8 or 9 bits).
-2. Replace the active `MACROS` entry in `src/config.json` with the entry for
-   the selected cell (including its GDS, LEF, black-box header and Liberty
-   corners). Keep unused macro entries out of `MACROS`. Set `instances` to the
-   actual RTL instance name and place it within the selected tile.
+2. Replace the active `MACROS` entry in `src/config.json` with the selected
+   cell's GDS, LEF, black-box header and Liberty corners. Keep unused macro
+   entries out of `MACROS`. Set `instances` to the actual RTL instance name
+   and place it within the selected tile.
 3. Update `info.yaml` `tiles` to a size that contains the LEF dimensions.
 4. Update the RTL and Cocotb top-level tests for the changed address range.
 
-The 256x8 and 512x8 macros are taller than a 2x2 tile, so use at least 3x4
-for those variants. Do not treat these hard macros as inferred memories:
-keep the black-box declaration for ASIC synthesis and use the official
-behavioral model only for simulation.
+The 256×8 and 512×8 macros are taller than a 2×2 tile, so use at least 3×4.
+Do not treat these hard macros as inferred memories: keep the black-box
+declaration for ASIC synthesis and use the official behavioral model only for
+simulation.
 
 ## Source and licensing
 
 The macro views are maintained by the Google GF180MCU SRAM IP repository and
 carry their upstream GlobalFoundries PDK Authors copyright and Apache-2.0
 license. This project pins the upstream submodule commit; it does not modify
-or regenerate the GDS, LEF, Liberty or functional Verilog views.
+or regenerate the vendor GDS, LEF, Liberty or functional Verilog views.
