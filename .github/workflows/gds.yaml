@@ -22,10 +22,18 @@ jobs:
           pdk_version: 54435919abffb937387ec956209f9cf5fd2dfbee
           pdk_root: /home/runner/.ciel
 
-      - name: Install Magic
+      - name: Build compatible Magic
         run: |
+          set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y magic
+          sudo apt-get install -y build-essential m4 tcsh tcl-dev tk-dev wget
+          wget -q https://opencircuitdesign.com/~tim/programs/magic/archive/magic-8.3.685.tgz -O /tmp/magic-8.3.685.tgz
+          tar -xzf /tmp/magic-8.3.685.tgz -C /tmp
+          cd /tmp/magic-8.3.685
+          CFLAGS="-std=gnu99 -Wno-deprecated-non-prototype -Wno-implicit-function-declaration -Wno-parentheses -Wno-macro-redefined" ./configure --prefix=/usr/local --with-tcl --without-x
+          make -j2
+          sudo make install
+          /usr/local/bin/magic -version
 
       - name: Generate SRAM Magic abstract view
         env:
