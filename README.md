@@ -1,48 +1,48 @@
-# Tiny Tapeout GF180 SRAM Verilog Template
+# Tiny Tapeout GF180MCU SRAM Template
 
 [![GDS](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/gds.yaml/badge.svg)](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/gds.yaml)
 [![RTL tests](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/test.yaml/badge.svg)](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/test.yaml)
 [![Docs](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/docs.yaml/badge.svg)](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/docs.yaml)
 [![FPGA](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/fpga.yaml/badge.svg)](https://github.com/opilitethesmartdev/ttgf-verilog-sram/actions/workflows/fpga.yaml)
 
-A Tiny Tapeout GF180MCU Verilog starter project that integrates the official
-Google/GlobalFoundries SRAM macros. The default project instantiates a physical
-64x8 SRAM and uses the official vendor model for RTL simulation.
+A Tiny Tapeout GF180MCU **Verilog** template demonstrating integration of the
+official Google/GlobalFoundries SRAM macros. The default design instantiates a
+physical 64×8 SRAM.
 
-## What is included
+## Features
 
-- Official Google GF180MCU SRAM IP as a pinned Git submodule at
-  `src/gf180mcu_fd_ip_sram`.
-- Official physical GDS, LEF, Verilog and Liberty views for all four 64x8, 128x8, 256x8 and 512x8 macros, supplied by the pinned submodule.
-- A selectable hardening configuration for the currently instantiated macro (64x8 by default), with 3.3 V typical, slow and fast Liberty corners.
-- Separate black-box Verilog declarations for ASIC synthesis and the official
-  functional/timing models for simulation.
-- A Cocotb testbench that exercises the example interface and all four SRAM
-  model sizes.
-- A separate inferred-memory implementation for the iCE40 FPGA workflow.
+- Pinned [GF180MCU SRAM IP](https://github.com/google/globalfoundries-pdk-ip-gf180mcu_fd_ip_sram)
+  submodule with official GDS, LEF, Liberty and Verilog views.
+- 64×8, 128×8, 256×8 and 512×8 single-port SRAM variants.
+- Separate ASIC black-box declarations and vendor simulation models.
+- Cocotb tests using the official models.
+- Inferred 64×8 memory for the iCE40 FPGA flow; the foundry macro is used in
+  the ASIC flow.
+- Tiny Tapeout GDS submission, precheck, gate-level test, KLayout 2D render
+  and interactive 3D viewer workflow.
 
 ## Getting started
 
-Clone the repository with its submodule:
+Clone with the SRAM submodule:
 
 ```sh
 git clone --recurse-submodules https://github.com/opilitethesmartdev/ttgf-verilog-sram.git
 cd ttgf-verilog-sram
 ```
 
-For an existing clone, initialize the macro submodule with:
+For an existing checkout:
 
 ```sh
 git submodule update --init --recursive
 ```
 
-Add project Verilog to `src`, update `info.yaml`, and keep the `source_files`
-list synchronized with the test Makefile. The SRAM physical views and timing
-libraries are registered in `src/config.json`.
+The example RTL is in `src/project.v`. Project metadata and pin labels are in
+`info.yaml`; physical macro views and timing corners are registered in
+`src/config.json`.
 
-## Default pin mapping
+## Default interface
 
-| Tiny Tapeout pin | Function |
+| Tiny Tapeout signal | Function |
 |---|---|
 | `ui_in[5:0]` | SRAM address |
 | `ui_in[6]` | Write enable, active high |
@@ -50,75 +50,73 @@ libraries are registered in `src/config.json`.
 | `uo_out[7:0]` | Read data |
 | `ui_in[7]` | Unused |
 
-The example uses the macro's full-byte write mask (`WEN=8'h00`). Reset does
-not clear SRAM contents: the macro has no reset pin, and the contents after
-power-up must be treated as undefined.
+The design uses the macro's full-byte write mask (`WEN=8'h00`). The macro has
+no reset pin: reset disables access but does not clear memory. SRAM contents
+after power-up are undefined in hardware.
 
-## SRAM sizes and floorplan
+## Available SRAMs
 
-The supplied macros are 8 bits wide. The minimum supported Tiny Tapeout tile
-dimensions that contain each macro are:
+All variants are 8 bits wide. The dimensions below are from their official
+LEF views.
 
-| Macro | LEF size (µm) | Minimum tile |
-|---|---:|---|
-| 64x8 | 431.86 x 232.88 | 2x2 |
-| 128x8 | 431.86 x 268.88 | 2x2 |
-| 256x8 | 431.86 x 340.88 | 3x4 |
-| 512x8 | 431.86 x 484.88 | 3x4 |
+| Macro | Capacity | Size (µm) | Minimum tile |
+|---|---:|---:|---:|
+| 64×8 | 512 bits | 431.86 × 232.88 | 2×2 |
+| 128×8 | 1 Kibit | 431.86 × 268.88 | 2×2 |
+| 256×8 | 2 Kibit | 431.86 × 340.88 | 3×4 |
+| 512×8 | 4 Kibit | 431.86 × 484.88 | 3×4 |
 
-Only the 64x8 macro is instantiated and registered in `src/config.json` by
-default. Keep only the macro actually instantiated by the RTL in the
-`MACROS` object. The other three official macro views remain available in the
-submodule and are covered by standalone simulation tests. When switching
-sizes, replace the active `MACROS` entry with the desired variant, add its
-placement under `instances`, and update the Verilog module/address width and
-`info.yaml` tile count together.
+Only the 64×8 macro is instantiated and registered in `src/config.json` by
+default. Keep unused macros out of the active `MACROS` object. When selecting
+another size, update the RTL module and address width, macro configuration and
+placement, and `info.yaml` tile count together.
 
-Before hardening, the GDS workflow normalizes the official 64x8 SRAM
-GDS using `.github/scripts/normalize_sram_gds.py`. It preserves the official
-macro root cell and all geometry on supported GF180 layers, assigns unique
-identifiers to internal hierarchy cells to avoid Magic name collisions, and
-removes layer `58/0`, which is not defined by the GF180MCU layer
-specification. The script verifies that all references resolve, the macro has
-one top cell, and no layer-58 records remain. The official LEF, Liberty,
-Verilog and simulation model are not modified.
+## Workflows and visualisation
 
-LibreLane produces both Magic and KLayout streamout views. The project sets
-`PRIMARY_GDSII_STREAMOUT_TOOL=klayout` so the submitted GDS comes from
-KLayout's streamout, which retains the unique `tt_um_example` top cell and
-only its referenced macro and standard-cell hierarchy. Magic streamout remains
-available as a separate output for the Magic flow. This avoids placing Magic's
-extra unreferenced SRAM subcells or unsupported layer 58 into the Tiny Tapeout
-submission.
+GitHub Actions runs RTL simulation, GF180 hardening, Tiny Tapeout precheck,
+gate-level simulation, documentation generation and the iCE40 FPGA build.
 
-Magic DRC and SPICE extraction use the routed DEF/LEF abstractions rather
-than the SRAM's transistor-level GDS hierarchy. The flow sets
-`MAGIC_DRC_USE_GDS=false`, `MAGIC_EXT_USE_GDS=false` and
-`MAGIC_EXT_ABSTRACT=true`. The GDS workflow generates a Magic abstract view
-from the exact official SRAM LEF and loads it through `MAGIC_DRC_MAGLEFS`.
-Place-and-route still uses the official macro LEF, and the KLayout GDS
-streamout includes the normalized official Google SRAM GDS registered in
-`MACROS`.
+The GDS job generates:
+- A KLayout **2D PNG preview** (`gds_render` artifact).
+- The final GDS and OASIS submission (`tt_submission` artifact).
+- Hardening logs and reports (`GDS_logs` artifact).
 
-Following the working OPI SRAM flow, `ERROR_ON_MAGIC_DRC=false` and
-`ERROR_ON_ILLEGAL_OVERLAPS=false`. Magic still runs the checks and retains
-their reports, but nonzero findings do not fail the hardening job. A green
-GDS workflow therefore does **not** mean zero-error, full-layout Magic DRC
-signoff. Inspect the `GDS_logs` artifact for the Magic reports; this
-configuration does not replace vendor macro signoff.
+The viewer job uses the same `TinyTapeout/tt-gds-action/viewer` action as
+[OPI-SiliconPUdx](https://github.com/opilitethesmartdev/opi-siliconpudx). It
+publishes the OASIS file to GitHub Pages and adds links to the interactive
+[3D viewer](https://gds-viewer.tinytapeout.com/) and
+[Tiny Tapeout Explorer](https://gds-explorer.tinytapeout.com/), with the 2D
+PNG embedded in the workflow summary.
 
-LibreLane's `KLayout.Render` step is enabled. The KLayout primary streamout
-now gives the renderer a single-top-cell layout, while the Tiny Tapeout PNG
-preview is also generated from the `tt_um_*` top cell.
-## Workflows
+**One-time setup:** open the repository
+[Pages settings](https://github.com/opilitethesmartdev/ttgf-verilog-sram/settings/pages)
+and set **Build and deployment → Source** to **GitHub Actions**. The viewer
+job skips deployment until this is configured. After enabling it, run the
+`gds` workflow again to publish the existing design.
 
-GitHub Actions is configured to run Cocotb RTL tests, the GF180 GDS build,
-precheck, gate-level tests, documentation build and iCE40 FPGA bitstream build
-on pushes to `main`. The GDS/GL and FPGA workflows use recursive submodule
-checkout. GitHub does not run workflows in forked repositories until Actions
-is enabled in the fork's **Actions** tab; enable it there before expecting CI
-runs.
+## Physical-flow notes
 
-See [docs/sram.md](docs/sram.md) for the SRAM interface, timing and integration
-details. The official source is
-[Google's GF180MCU SRAM IP repository](https://github.com/google/globalfoundries-pdk-ip-gf180mcu_fd_ip_sram).
+The active ASIC macro has a GDS, LEF, black-box Verilog declaration and three
+3.3 V Liberty corners (typical, slow and fast). Place-and-route uses the LEF;
+synthesis uses the black-box declaration; STA uses the Liberty files; final
+KLayout streamout includes the normalized official macro GDS.
+
+Before hardening, `.github/scripts/normalize_sram_gds.py` gives internal GDS
+cells unique names for Magic compatibility and removes the unsupported GF180
+layer 58/0. The SRAM root cell and geometry on supported layers are retained.
+The official LEF, Liberty, Verilog and behavioral simulation models are not
+modified.
+
+### Verification limitations
+
+A successful workflow is not the same as DRC signoff. In the current
+configuration, Magic DRC and illegal-overlap findings are non-fatal, and
+KLayout DRC is disabled. The latest inspected GDS run reported 1,246 Magic
+DRC findings; LVS and antenna checks passed. Review the `GDS_logs` artifact
+before relying on the layout. The current flow is a working integration
+example, not a signoff-clean SRAM macro release.
+
+The Icarus RTL tests exercise functional behavior with specify-path checking
+disabled because Icarus cannot elaborate the vendor model's bit-specific
+specify paths. See [test/README.md](test/README.md) and
+[docs/sram.md](docs/sram.md) for timing and integration details.
